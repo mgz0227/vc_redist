@@ -1,85 +1,55 @@
-# Visual C++ Redistributable 下载合集（2005–2026）
+# VC++ Runtime Manager
 
-本仓库整理了多个版本的 Microsoft Visual C++ Redistributable 运行库下载地址，适用于程序缺少 DLL、运行报错等常见问题。
+一个用于检测、准备和静默安装 Microsoft Visual C++ Redistributable 的 Windows 桌面工具。它覆盖 VC++ 2005、2008、2010、2012、2013 以及 2017-2026 的 x86/x64 运行库。
 
----
+## 功能
 
-## 📌 2017–2026（VC++ 14.x / 最新支持）
+- 读取 Windows 注册表，分别识别 x86 与 x64 运行库的安装状态和本机版本。
+- 仅自动选择缺失项目；已安装项目仍可手动选择以获取最新包。
+- 优先使用仓库中的 `offline/` 安装包，并对每个内置包进行 SHA-256 校验。
+- 下载使用临时 `.part` 文件和原子替换，未完成的下载不会被当作可安装文件。
+- 对 2017-2026 包，在用户选择安装后获取最新线上版本并与本机版本比较。
+- 清楚区分“在线源可达”和“存在更新”：扫描页不会把前者误报为更新。
+- 安装过程展示包准备、静默安装、返回代码与重启需求。
 
-- [vc_redist.x64.exe（2017–2026）](https://aka.ms/vc14/vc_redist.x64.exe)
-- [vc_redist.x86.exe（2017–2026）](https://aka.ms/vc14/vc_redist.x86.exe)
+## 运行
 
----
-
-## 📌 2013（VC++ 12.0）
-
-- [vcredist_x64.exe](https://download.visualstudio.microsoft.com/download/pr/10912041/cee5d6bca2ddbcd039da727bf4acb48a/vcredist_x64.exe)
-- [vcredist_x86.exe](https://download.visualstudio.microsoft.com/download/pr/10912113/5da66ddebb0ad32ebd4b922fd82e8e25/vcredist_x86.exe)
-
----
-
-## 📌 2012（VC++ 11.0）
-
-- [vcredist_x64.exe](http://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x64.exe)
-- [vcredist_x86.exe](http://download.microsoft.com/download/1/6/B/16B06F60-3B20-4FF2-B699-5E9B7962F9AE/VSU_4/vcredist_x86.exe)
-
----
-
-## 📌 2010（VC++ 10.0）
-
-- [vcredist_x64.exe](http://download.microsoft.com/download/E/E/0/EE05C9EF-A661-4D9E-BCE2-6961ECDF087F/vcredist_x64.exe)
-- [vcredist_x86.exe](http://download.microsoft.com/download/E/E/0/EE05C9EF-A661-4D9E-BCE2-6961ECDF087F/vcredist_x86.exe)
-
----
-
-## 📌 2008（VC++ 9.0）
-
-- [vcredist_x64_9.0.30729.7523.exe](https://gitlab.com/stdout12/adns/uploads/0f07341a2ba4f97011c7d9f567dc1684/vcredist_x64_9.0.30729.7523.exe)
-- [vcredist_x86_9.0.30729.7523.exe](https://gitlab.com/stdout12/adns/uploads/bba8b7855325681d9849c766f439a614/vcredist_x86_9.0.30729.7523.exe)
-
----
-
-## 📌 2005（VC++ 8.0）
-
-- [vcredist_x64_8.0.50727.6229.exe](https://gitlab.com/stdout12/adns/uploads/c1aa6269e6bc0559c640c9dc2b11f98b/vcredist_x64_8.0.50727.6229.exe)
-- [vcredist_x86_8.0.50727.6229.exe](https://gitlab.com/stdout12/adns/uploads/6e4cb29579c9ff812e79ffd7746d243a/vcredist_x86_8.0.50727.6229.exe)
-
----
-
-## ⚠️ 使用说明
-
-- `x86`：适用于 32 位程序  
-- `x64`：适用于 64 位程序  
-- 建议：所有版本可以共存安装，不会冲突  
-
----
-
-## 自动化安装
-
-本项目已内置 2005、2008、2010、2012、2013、2017-2026 的 x86/x64 自动安装配置，配置文件在 `runtime_data.py`。
-
-### 1. 安装 Python 依赖
+需要 Windows 以及 Python 3.10 或更高版本。建议从管理员终端启动，以便安装程序能够写入系统目录和注册表。
 
 ```powershell
-pip install -r requirements.txt
+py -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe gui.py
 ```
 
-### 2. 启动图形安装器
+主界面会自动扫描。通常只需确认“待安装”项目，然后点击左下角的安装按钮。
+
+## 使用说明
+
+- `重新扫描`：重新读取本机状态，并检查 2017-2026 包的在线源可用性。
+- `选择待处理项`：选择尚未安装的、当前系统可支持的运行库。
+- `全选可用项`：包含已安装项目；适合需要重新运行安装器或检查最新版的场景。
+- `打开离线包目录`：查看或替换缓存的安装包。替换后需要同时更新 `runtime_data.py` 中对应的 SHA-256。
+
+安装器的返回代码 `0` 表示成功，`1638` 表示相同或更高版本已存在，`3010` 和 `1641` 表示安装完成后需要重启 Windows。
+
+## 项目结构
+
+```text
+gui.py             CustomTkinter 图形界面
+checker.py         注册表检测
+downloader.py      下载、原子写入与包校验
+installer.py       静默安装与返回代码处理
+runtime_data.py    运行库元数据、下载源与 SHA-256
+version_utils.py   版本比较和在线包信息
+offline/           随仓库提供的离线安装包
+tests/             自动化测试
+```
+
+## 验证
 
 ```powershell
-python gui.py
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
-点击“检测并安装”后，程序会：
-
-- 按注册表检测已安装的 VC++ 运行库；
-- 只安装缺失项；
-- 优先复用 `offline/` 目录下已有离线安装包；
-- 离线包不存在时按配置地址下载；
-- 使用静默参数自动安装并禁止自动重启。
-
-### 3. 注意事项
-
-- 请用管理员权限运行终端或 VS Code，否则安装程序可能无法写入系统目录和注册表；
-- 64 位 Windows 会同时检测并安装 x86 与 x64，32 位 Windows 只处理 x86；
-- 安装返回码 `0` 通常表示成功，`3010` 通常表示安装成功但需要重启。
+在线源验证依赖正常的 TLS 证书链。网络受代理或企业证书策略影响时，工具会保留 TLS 校验并回退到已校验的离线包，不会通过关闭证书验证来继续下载。

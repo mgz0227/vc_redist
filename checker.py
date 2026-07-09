@@ -1,5 +1,8 @@
 # checker.py
-import winreg
+try:
+    import winreg
+except ImportError:  # Allows non-Windows tooling to import the module safely.
+    winreg = None
 from sysinfo import get_arch
 
 REGISTRY_VIEWS = (winreg.KEY_WOW64_64KEY, winreg.KEY_WOW64_32KEY, 0)
@@ -12,6 +15,8 @@ def _registry_views_for_arch(arch):
     return (winreg.KEY_WOW64_32KEY,)
 
 def _query_registry_value(path, arch, value_name):
+    if winreg is None:
+        return None
     for view in _registry_views_for_arch(arch):
         try:
             with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | view) as key:
@@ -22,6 +27,8 @@ def _query_registry_value(path, arch, value_name):
     return None
 
 def _reg_check(path, arch):
+    if winreg is None:
+        return False
     try:
         for view in _registry_views_for_arch(arch):
             try:

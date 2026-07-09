@@ -1,1 +1,8 @@
 /__pycache__
+/downloads/
+*.part
+/tests
+!/tests/
+!/tests/*.py
+/tests/__pycache__/
+/tests

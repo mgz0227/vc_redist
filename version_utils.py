@@ -1,11 +1,16 @@
 # version_utils.py
-import os
 import re
 import subprocess
 import tempfile
+from pathlib import Path
 
 import requests
 
+from downloader import download_file
+from paths import resolve_project_path
+
+
+REQUEST_TIMEOUT = (10, 30)
 
 def parse_version(value):
     if not value:
@@ -32,9 +37,12 @@ def compare_versions(left, right):
 
 
 def get_file_version(path):
+    package = resolve_project_path(path)
+    if not package.is_file():
+        return ""
     command = "$v=(Get-Item -LiteralPath $args[0]).VersionInfo; if ($v.ProductVersion) { $v.ProductVersion } else { $v.FileVersion }"
     result = subprocess.run(
-        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command, path],
+        ["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", command, str(package)],
         capture_output=True,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
         text=True,
@@ -45,31 +53,24 @@ def get_file_version(path):
 
 
 def get_cloud_package_info(runtime):
-    response = requests.head(runtime["url"], timeout=15, allow_redirects=True)
-    response.raise_for_status()
-    return {
-        "url": response.url,
-        "size": int(response.headers.get("content-length", 0) or 0),
-        "last_modified": response.headers.get("last-modified", ""),
-    }
+    with requests.head(
+        runtime["url"],
+        timeout=REQUEST_TIMEOUT,
+        allow_redirects=True,
+        headers={"User-Agent": "VC-Redist-Manager/1.0"},
+    ) as response:
+        response.raise_for_status()
+        return {
+            "url": response.url,
+            "size": int(response.headers.get("content-length", 0) or 0),
+            "last_modified": response.headers.get("last-modified", ""),
+        }
 
 
 def download_latest_package(runtime, cb=None):
-    folder = os.path.join(tempfile.gettempdir(), "vc_redist_latest")
-    os.makedirs(folder, exist_ok=True)
-    path = os.path.join(folder, f'{runtime["id"]}.exe')
-
-    response = requests.get(runtime["url"], stream=True, timeout=30, allow_redirects=True)
-    response.raise_for_status()
-
-    total = int(response.headers.get("content-length", 0))
-    current = 0
-    with open(path, "wb") as file:
-        for chunk in response.iter_content(1024 * 256):
-            if chunk:
-                file.write(chunk)
-                current += len(chunk)
-                if cb:
-                    cb(runtime["name"], current, total)
-
-    return path, get_file_version(path)
+    folder = Path(tempfile.gettempdir()) / "vc_redist_latest"
+    path = folder / f'{runtime["id"]}.exe'
+    latest_path = download_file(
+        runtime["url"], path, name=runtime["name"], cb=cb, reuse_existing=False
+    )
+    return latest_path, get_file_version(latest_path)
