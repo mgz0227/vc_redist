@@ -1,14 +1,19 @@
 # installer.py
-import subprocess, os
+import os
+import subprocess
 
 def install(exe, args):
     return subprocess.run(f'"{exe}" {args}', shell=True).returncode
 
-def install_all(files, runtimes):
+def install_all(files, runtimes=None):
     res = {}
-    for f in files:
-        name = os.path.basename(f)
-        m = next((r for r in runtimes if r["url"].split("/")[-1]==name),None)
-        if m:
-            res[name] = install(f, m["silent_args"])
+    if runtimes is None:
+        runtimes = []
+
+    by_path = {os.path.normcase(os.path.abspath(f)): f for f in files}
+    for item in runtimes:
+        offline_path = item.get("offline_path")
+        exe = by_path.get(os.path.normcase(os.path.abspath(offline_path))) if offline_path else None
+        if exe:
+            res[item["name"]] = install(exe, item["silent_args"])
     return res

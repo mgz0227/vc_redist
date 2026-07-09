@@ -11,8 +11,16 @@ def sha256_file(p):
 
 def download_one(item, out, cb=None):
     url = item["url"]
-    path = os.path.join(out, url.split("/")[-1])
-    r = requests.get(url, stream=True, timeout=30)
+    path = item.get("offline_path") or os.path.join(out, f'{item["id"]}_{url.split("/")[-1]}')
+    os.makedirs(os.path.dirname(path) or out, exist_ok=True)
+
+    if os.path.exists(path):
+        if cb:
+            cb(item["name"], os.path.getsize(path), os.path.getsize(path))
+        return path
+
+    r = requests.get(url, stream=True, timeout=30, allow_redirects=True)
+    r.raise_for_status()
 
     total = int(r.headers.get("content-length",0))
     cur = 0

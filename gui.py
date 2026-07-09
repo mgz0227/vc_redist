@@ -60,7 +60,7 @@ class App(ctk.CTk):
 
         self.write("下载完成，安装中...")
 
-        res = install_all(files, RUNTIMES)
+        res = install_all(files, miss)
 
         self.write("完成:")
         for k,v in res.items():
