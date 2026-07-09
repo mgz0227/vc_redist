@@ -11,6 +11,16 @@ def _registry_views_for_arch(arch):
         return (winreg.KEY_WOW64_64KEY,)
     return (winreg.KEY_WOW64_32KEY,)
 
+def _query_registry_value(path, arch, value_name):
+    for view in _registry_views_for_arch(arch):
+        try:
+            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, path, 0, winreg.KEY_READ | view) as key:
+                value, _ = winreg.QueryValueEx(key, value_name)
+                return value
+        except OSError:
+            pass
+    return None
+
 def _reg_check(path, arch):
     try:
         for view in _registry_views_for_arch(arch):
@@ -36,6 +46,14 @@ def _default_registry_checks(version_key, arch):
 def check_installed(runtime):
     checks = runtime.get("registry_checks") or _default_registry_checks(runtime["version_key"], runtime["arch"])
     return any(_reg_check(path, runtime["arch"]) for path in checks)
+
+def get_installed_version(runtime):
+    checks = runtime.get("registry_checks") or _default_registry_checks(runtime["version_key"], runtime["arch"])
+    for path in checks:
+        value = _query_registry_value(path, runtime["arch"], "Version")
+        if value:
+            return str(value)
+    return ""
 
 def is_supported_arch(runtime):
     return get_arch() == "x64" or runtime["arch"] == "x86"

@@ -8,6 +8,7 @@ RUNTIMES = [
         "arch": "x64",
         "url": "https://aka.ms/vc14/vc_redist.x64.exe",
         "offline_path": "offline/2017-2026/VC_redist.x64.exe",
+        "cloud_version_check": True,
         "registry_checks": ["SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\x64"],
         "sha256": "",
         "silent_args": "/install /quiet /norestart"
@@ -19,6 +20,7 @@ RUNTIMES = [
         "arch": "x86",
         "url": "https://aka.ms/vc14/vc_redist.x86.exe",
         "offline_path": "offline/2017-2026/VC_redist.x86.exe",
+        "cloud_version_check": True,
         "registry_checks": ["SOFTWARE\\Microsoft\\VisualStudio\\14.0\\VC\\Runtimes\\x86"],
         "sha256": "",
         "silent_args": "/install /quiet /norestart"

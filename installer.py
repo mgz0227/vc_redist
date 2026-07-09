@@ -14,7 +14,7 @@ def install_all(files, runtimes=None, cb=None):
 
     by_path = {os.path.normcase(os.path.abspath(f)): f for f in files}
     for item in runtimes:
-        offline_path = item.get("offline_path")
+        offline_path = item.get("_install_path") or item.get("offline_path")
         exe = by_path.get(os.path.normcase(os.path.abspath(offline_path))) if offline_path else None
         if exe:
             if cb:
